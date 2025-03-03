@@ -82,7 +82,7 @@ const login = async (req, res) => {
         }
 
         // Check if the provided password matches the user's hashed password
-        const isMatch = await user.compare(password);
+        const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({
                 success: false,

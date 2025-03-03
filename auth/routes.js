@@ -6,7 +6,7 @@ const {
     signupValidationRules,
     signinValidationRules,
     validate,
-} = require("./validation");
+} = require("./validator");
 
 // Signup route
 router.post("/signup", signupValidationRules, validate, signup);

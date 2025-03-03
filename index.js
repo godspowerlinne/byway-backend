@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const authRoute = require('./auth/routes');
+const errorHandler = require('./middlewares/errorHandler');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
@@ -15,13 +17,16 @@ app.use(cors(
 
 app.use(express.json());
 
-const AuthLimiter = rateLimit({
+const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // Limit each IP to 100 requests per windowMs
     message: "Too many requests, please try again later." 
 });
 
-app.use(AuthLimiter);
+app.use("/api/auth", authLimiter);
+app.use("/api/auth", authRoute);
+
+app.use(errorHandler); // Error handling middleware
 
 const url = process.env.MONGODB_URL; 
 const options = { serverSelectionTimeoutMS: 30000, connectTimeoutMS: 5000, }; // Set connection timeout to 30 seconds
