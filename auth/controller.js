@@ -9,7 +9,14 @@ const signup = async (req, res) => {
             firstname,
             lastname,
             email,
-            password
+            password,
+            // Additional fields 
+            role,
+            bio,
+            title,
+            experience,
+            socialLinks,
+            profileImage
         } = req.body;
 
         // Check if the username or email already exists
@@ -34,6 +41,13 @@ const signup = async (req, res) => {
             lastname,
             email,
             password,
+            //Add optional fields
+            ...(role && { role }),
+            ...(bio && { bio }),
+            ...(title && { title }),
+            ...(experience && { experience }),
+            ...(socialLinks && { socialLinks }),
+            ...(profileImage && { profileImage }),
         });
         await newUser.save(); // Save the user to the database
         res.status(201).json({
@@ -45,6 +59,13 @@ const signup = async (req, res) => {
                 firstname: newUser.firstname,
                 lastname: newUser.lastname,
                 email: newUser.email,
+                //Additional fields
+                role: newUser.role,
+                profileImage: newUser.profileImage,
+                bio: newUser.bio,
+                title: newUser.title,
+                experience: newUser.experience,
+                socialLinks: newUser.socialLinks,
             },
         });
     } catch (error) {
@@ -112,10 +133,17 @@ const login = async (req, res) => {
                 firstname: user.firstname,
                 lastname: user.lastname,
                 email: user.email,
+                //Additional fields
+                role: user.role,
+                profileImage: user.profileImage,
+                bio: user.bio,
+                title: user.title,
+                experience: user.experience,
+                socialLinks: user.socialLinks,
             },
         });
     } catch (error) {
-        console.error("Login Error: ",error);
+        console.error("Login Error: ", error);
         return res.status(500).json({
             success: false,
             message: "Error logging in user.",
@@ -123,7 +151,40 @@ const login = async (req, res) => {
     }
 }
 
+// Get current user profile
+const getCurrentUser = async (req, res) => {
+    try {
+        //user id comes from auth middleware
+        const userId = req.userId;
+
+        const user = await User.findById(userId)
+            .select("-password")
+            .populate("enrolledCourses", "title thumbnail progress")
+            .populate("createdCourses", "title thumbnail progress")
+            .populate("wishlist", "title thumbnail progress");
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            user,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching current user profile",
+            error: error.message,
+        });
+    }
+};
+
 module.exports = {
     signup,
     login,
+    getCurrentUser,
 };
