@@ -18,11 +18,7 @@ const authMiddleware = require("../middlewares/authMiddleware");
 // Configure multer for file uploads with directory check
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const dir = "uploads/profile-images/";
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        cb(null, dir);
+        cb(null, "uploads/profile-images/");
     },
     filename: function (req, file, cb) {
         cb(null, `user-${Date.now()}${path.extname(file.originalname)}`);
