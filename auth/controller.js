@@ -116,7 +116,8 @@ const login = async (req, res) => {
             {
                 userId: user._id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                role: user.role
             },
             process.env.JWT_SECRET,
             { expiresIn: "1d" } // Expires in 1 day
@@ -140,6 +141,9 @@ const login = async (req, res) => {
                 title: user.title,
                 experience: user.experience,
                 socialLinks: user.socialLinks,
+                enrolledCourses: user.enrolledCourses.length,
+                createdCourses: user.createdCourses.length,
+                wishlist: user.wishlist.length,
             },
         });
     } catch (error) {
@@ -147,6 +151,7 @@ const login = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Error logging in user.",
+            error: error.message,
         });
     }
 }
@@ -183,8 +188,111 @@ const getCurrentUser = async (req, res) => {
     }
 };
 
+// Update user profile 
+const updateProfile = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const {
+            firstname,
+            lastname,
+            bio,
+            title,
+            experience,
+            socialLinks,
+        } = req.body;
+
+        // Fields to be updated in the database
+        const updateData = {}
+
+        if (firstname) updateData.firstname = firstname;
+        if (lastname) updateData.lastname = lastname;
+        if (bio) updateData.bio = bio;
+        if (title) updateData.title = title;
+        if (experience) updateData.experience = experience;
+        if (socialLinks) updateData.socialLinks = socialLinks;
+        // Handle profile image if provided
+        if (req.file) {
+            updateData.profileImage = `uploads/${req.file.filename}`;
+        }
+        // Update user document in the database
+        const updatedUser = await User.findByIdAndUpdate(
+            userId, 
+            { $set: updateData },
+            { new: true } 
+        ).select("-password");
+        if (!updatedUser) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+        // Return updated user profile
+        res.json({
+            success: true,
+            message: "User profile updated successfully",
+            user: updatedUser
+            });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error updating user profile",
+            error: error.message,
+        });
+        
+    }
+}
+
+// Update Password 
+const updatePassword = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { currentPassword, newPassword } = req.body;
+        // Check to make sure all fields are provided
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter your Current Password and a New Password.",
+            });
+        }
+        // Check if user exists
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        } 
+
+        // Check if current password is correct
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: "Current password is incorrect",
+            });
+        }
+
+        // Update password
+        user.password = newPassword;
+        await user.save();
+        res.json({
+            success: true,
+            message: "Password updated successfully",
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error updating password",
+            error: error.message,
+        });
+        
+    }
+}
+
 module.exports = {
     signup,
     login,
     getCurrentUser,
+    updateProfile,
+    updatePassword,
 };
